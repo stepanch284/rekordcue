@@ -100,18 +100,50 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01–06 | Phase 1 | Pending |
-| WAVE-01–04 | Phase 2 | Pending |
-| DETECT-01–06 | Phase 3 | Pending |
-| CUE-01–11 | Phase 4 | Pending |
-| SAFE-01–02 | Phase 1 + 4 | Pending |
-| UI-01–06 | Phase 5 | Pending |
+| FOUND-01 | Phase 1 | Pending |
+| FOUND-02 | Phase 1 | Pending |
+| FOUND-03 | Phase 1 | Pending |
+| FOUND-04 | Phase 1 | Pending |
+| FOUND-05 | Phase 1 | Pending |
+| FOUND-06 | Phase 1 | Pending |
+| WAVE-01 | Phase 1 | Pending |
+| WAVE-02 | Phase 1 | Pending |
+| WAVE-03 | Phase 2 | Pending |
+| WAVE-04 | Phase 2 | Pending |
+| DETECT-01 | Phase 3 | Pending |
+| DETECT-02 | Phase 3 | Pending |
+| DETECT-03 | Phase 3 | Pending |
+| DETECT-04 | Phase 4 | Pending |
+| DETECT-05 | Phase 4 | Pending |
+| DETECT-06 | Phase 4 | Pending |
+| DETECT-07 | Phase 4 | Pending |
+| DETECT-08 | Phase 3 | Pending |
+| DETECT-09 | Phase 4 | Pending |
+| CUE-01 | Phase 5 | Pending |
+| CUE-02 | Phase 5 | Pending |
+| CUE-03 | Phase 5 | Pending |
+| CUE-04 | Phase 7 | Pending |
+| CUE-05 | Phase 7 | Pending |
+| CUE-06 | Phase 7 | Pending |
+| CUE-07 | Phase 7 | Pending |
+| CUE-08 | Phase 5 | Pending |
+| CUE-09 | Phase 6 | Pending |
+| CUE-10 | Phase 6 | Pending |
+| CUE-11 | Phase 5 | Pending |
+| UI-01 | Phase 8 | Pending |
+| UI-02 | Phase 8 | Pending |
+| UI-03 | Phase 9 | Pending |
+| UI-04 | Phase 8 | Pending |
+| UI-05 | Phase 9 | Pending |
+| UI-06 | Phase 8 | Pending |
+| SAFE-01 | Phase 1 | Pending |
+| SAFE-02 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 34 total
-- Mapped to phases: 28
+- v1 requirements: 36 total
+- Mapped to phases: 36
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-08*
-*Last updated: 2026-04-08 after initial definition*
+*Last updated: 2026-04-08 — traceability updated after roadmap creation*
