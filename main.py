@@ -48,14 +48,16 @@ def main():
         bar_times_s, bpm = get_beat_grid(db, content)
         print(f"Beat grid: {len(bar_times_s)} bars, BPM={bpm:.1f}")
 
-        # Step 5: Detect first energy onset
+        # Step 5: Detect first energy onset (Drop 1)
         onset_s, bar_idx = detect_first_onset(amplitudes, bar_times_s, length_s)
         onset_ms = round(onset_s * 1000)
         print(f"Detected onset at bar {bar_idx}, {onset_s:.3f}s ({onset_ms}ms)")
 
         # Step 6: Guard, backup, write
-        safe_write_sequence(db, content, onset_ms)
-        print(f"Hot cue A written at {onset_ms}ms")
+        # Hot cue A is always at bar 0 (track start anchor)
+        bar0_ms = int(bar_times_s[0] * 1000)  # type: ignore[arg-type]
+        safe_write_sequence(db, content, bar0_ms)
+        print(f"Hot cue A written at bar 0 ({bar0_ms}ms)")
 
     except RuntimeError as exc:
         # Covers: process guard blocked, schema mismatch, backup failure
