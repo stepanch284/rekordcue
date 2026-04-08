@@ -94,7 +94,9 @@ def get_track(db: Rekordbox6Database, track_id: str):
     Raises:
         ValueError: If the track ID is not found in the library.
     """
-    content = db.get_content(ID=track_id).first()
+    # get_content(ID=...) returns the ORM object directly (not a Query)
+    # get_content() with no args returns a Query; filter_by + first() needed there
+    content = db.get_content(ID=track_id)
     if content is None:
         raise ValueError(f"Track ID {track_id} not found in library")
 
