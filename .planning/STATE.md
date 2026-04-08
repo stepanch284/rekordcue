@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-04-08)
 ## Current Position
 
 Phase: 1 of 9 (CLI Proof-of-Concept)
-Plan: 1 of TBD in current phase (01-01 complete)
+Plan: 2 of TBD in current phase (01-02 complete)
 Status: In progress
-Last activity: 2026-04-08 — Plan 01-01 complete: DB + Waveform read pipeline
+Last activity: 2026-04-08 — Plan 01-02 complete: Write pipeline + CLI entry point (human-verified)
 
-Progress: [█░░░░░░░░░] ~5%
+Progress: [██░░░░░░░░] ~10%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: ~20 minutes
-- Total execution time: ~0.33 hours
+- Total plans completed: 2
+- Average duration: ~22 minutes
+- Total execution time: ~0.75 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 | 1 | ~20 min | ~20 min |
+| 1 | 2 | ~45 min | ~22 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~20 min)
-- Trend: Baseline established
+- Last 5 plans: 01-01 (~20 min), 01-02 (~25 min)
+- Trend: Stable
 
 *Updated after each plan completion*
 
@@ -49,6 +49,9 @@ Recent decisions affecting current work:
 - Init: Memory cues at Drop 1, Breakdown, Drop 2, Outro — no label text
 - 01-01: db.get_content(ID=) returns ORM object directly (not a Query) — .first() must NOT be called
 - 01-01: Onset threshold computed on non-silent bars only to avoid intro silence skewing stats
+- 01-02: Hot cue A is written at bar 0 (bar_times_s[0]), not at the detected onset — onset is informational only
+- 01-02: Color=255 / ColorTableIndex=22 confirmed from live Rekordbox row inspection (not palette index)
+- 01-02: StatsFull mixin auto-sets created_at/updated_at — omit from DjmdCue constructor
 
 ### Pending Todos
 
@@ -66,6 +69,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-08
-Stopped at: Plan 01-01 complete. db.py, waveform.py, detect.py created and committed.
-Resume at: Plan 01-02 (cue writing pipeline)
+Stopped at: Plan 01-02 complete. writer.py and main.py created and committed. Hot cue A write verified in Rekordbox 7.2.3.
+Resume at: Next plan in Phase 1 (TBD)
 Resume file: None
