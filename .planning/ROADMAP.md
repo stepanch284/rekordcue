@@ -6,7 +6,7 @@ RekordCue is built in three distinct layers that must be proven in order: first 
 
 ## Phases
 
-- [ ] **Phase 1: CLI Proof-of-Concept** - One track, one hot cue, full safety pipeline, confirmed in Rekordbox
+- [x] **Phase 1: CLI Proof-of-Concept** - One track, one hot cue, full safety pipeline, confirmed in Rekordbox
 - [ ] **Phase 2: Waveform Parser Hardening** - PSSI phrase shortcut, graceful handling of missing/incomplete ANLZ files
 - [ ] **Phase 3: Beat Grid & Bar Math** - Timing foundation — beat grid anchor, bar boundaries, 8-bar alignment
 - [ ] **Phase 4: Full Section Detection** - Energy-based detection of Drop 1, Breakdown, Drop 2, Outro with confidence scoring
@@ -29,7 +29,10 @@ RekordCue is built in three distinct layers that must be proven in order: first 
   4. A single hot cue is written to master.db: backup created first, psutil guard blocks if rekordbox.exe is running, write uses BEGIN EXCLUSIVE transaction with full rollback on error
   5. Schema validated at startup via PRAGMA user_version and PRAGMA table_info(DjmdCue) before any write; unrecognized schema aborts cleanly
   6. After closing and re-opening Rekordbox, the written hot cue appears on the correct track at the correct position
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [x] 01-01-PLAN.md — Read pipeline: DB open, schema validation, ANLZ/PWAV parsing, energy onset detection
+- [x] 01-02-PLAN.md — Write pipeline: process guard, backup, hot cue write, CLI entry point, Rekordbox verification
 
 ### Phase 2: Waveform Parser Hardening
 **Goal**: Make waveform loading production-grade by exploiting Rekordbox's own phrase analysis when available and handling all missing-file scenarios gracefully.
@@ -128,7 +131,7 @@ RekordCue is built in three distinct layers that must be proven in order: first 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. CLI Proof-of-Concept | 0/TBD | Not started | - |
+| 1. CLI Proof-of-Concept | 2/2 | Complete | 2026-04-08 |
 | 2. Waveform Parser Hardening | 0/TBD | Not started | - |
 | 3. Beat Grid & Bar Math | 0/TBD | Not started | - |
 | 4. Full Section Detection | 0/TBD | Not started | - |

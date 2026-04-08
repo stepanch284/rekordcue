@@ -7,17 +7,17 @@
 
 ### Foundation
 
-- [ ] **FOUND-01**: App reads Rekordbox's SQLite `master.db` via pyrekordbox without corrupting it
-- [ ] **FOUND-02**: App detects Rekordbox's AppData path on Windows (`%APPDATA%\Pioneer\rekordbox*`) with fallback enumeration for version differences
-- [ ] **FOUND-03**: App checks if `rekordbox.exe` is running before any write; if detected, shows a clear dialog telling the user to close Rekordbox and blocks the operation until they do
-- [ ] **FOUND-04**: App creates a timestamped backup of `master.db` before every write operation
-- [ ] **FOUND-05**: App validates the `master.db` schema version at startup (`PRAGMA user_version`) and refuses to write if unrecognized
-- [ ] **FOUND-06**: App inspects `PRAGMA table_info(DjmdCue)` at startup to verify expected schema before writing
+- [x] **FOUND-01**: App reads Rekordbox's SQLite `master.db` via pyrekordbox without corrupting it
+- [x] **FOUND-02**: App detects Rekordbox's AppData path on Windows (`%APPDATA%\Pioneer\rekordbox*`) with fallback enumeration for version differences
+- [x] **FOUND-03**: App checks if `rekordbox.exe` is running before any write; if detected, shows a clear dialog telling the user to close Rekordbox and blocks the operation until they do
+- [x] **FOUND-04**: App creates a timestamped backup of `master.db` before every write operation
+- [x] **FOUND-05**: App validates the `master.db` schema version at startup (`PRAGMA user_version`) and refuses to write if unrecognized
+- [x] **FOUND-06**: App inspects `PRAGMA table_info(DjmdCue)` at startup to verify expected schema before writing
 
 ### Waveform Analysis
 
-- [ ] **WAVE-01**: App locates ANLZ `.DAT` and `.EXT` files from `DjmdContent.AnalysisDataPath` in the database
-- [ ] **WAVE-02**: App parses the `PWAV` tag (amplitude array at ~150 samples/sec) from `.DAT` files using pyrekordbox
+- [x] **WAVE-01**: App locates ANLZ `.DAT` and `.EXT` files from `DjmdContent.AnalysisDataPath` in the database
+- [x] **WAVE-02**: App parses the `PWAV` tag (amplitude array at ~150 samples/sec) from `.DAT` files using pyrekordbox
 - [ ] **WAVE-03**: App checks for `PSSI` phrase tag in `.EXT` files and uses it as section data if available (Rekordbox's own phrase analysis shortcut)
 - [ ] **WAVE-04**: App gracefully skips tracks with missing or incomplete ANLZ files with a user-visible warning
 
@@ -58,7 +58,7 @@
 
 ### Safety & Reliability
 
-- [ ] **SAFE-01**: All DB writes use `BEGIN EXCLUSIVE` transactions with full rollback on any error
+- [x] **SAFE-01**: All DB writes use `BEGIN EXCLUSIVE` transactions with full rollback on any error
 - [ ] **SAFE-02**: App handles missing/corrupt ANLZ files, unanalyzed tracks, and empty beat grids without crashing
 
 ## v2 Requirements
@@ -100,14 +100,14 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 1 | Pending |
-| FOUND-02 | Phase 1 | Pending |
-| FOUND-03 | Phase 1 | Pending |
-| FOUND-04 | Phase 1 | Pending |
-| FOUND-05 | Phase 1 | Pending |
-| FOUND-06 | Phase 1 | Pending |
-| WAVE-01 | Phase 1 | Pending |
-| WAVE-02 | Phase 1 | Pending |
+| FOUND-01 | Phase 1 | Complete |
+| FOUND-02 | Phase 1 | Complete |
+| FOUND-03 | Phase 1 | Complete |
+| FOUND-04 | Phase 1 | Complete |
+| FOUND-05 | Phase 1 | Complete |
+| FOUND-06 | Phase 1 | Complete |
+| WAVE-01 | Phase 1 | Complete |
+| WAVE-02 | Phase 1 | Complete |
 | WAVE-03 | Phase 2 | Pending |
 | WAVE-04 | Phase 2 | Pending |
 | DETECT-01 | Phase 3 | Pending |
@@ -136,7 +136,7 @@
 | UI-04 | Phase 8 | Pending |
 | UI-05 | Phase 9 | Pending |
 | UI-06 | Phase 8 | Pending |
-| SAFE-01 | Phase 1 | Pending |
+| SAFE-01 | Phase 1 | Complete |
 | SAFE-02 | Phase 6 | Pending |
 
 **Coverage:**
@@ -146,4 +146,4 @@
 
 ---
 *Requirements defined: 2026-04-08*
-*Last updated: 2026-04-08 — traceability updated after roadmap creation*
+*Last updated: 2026-04-08 — Phase 1 requirements marked Complete after verification*
