@@ -119,6 +119,12 @@ def main():
         safe_write_all(db, content, cues)
         print("Done.")
 
+    except FileNotFoundError as exc:
+        print(f"WARNING: Track has no ANLZ analysis data — skipping. ({exc})")
+        sys.exit(0)
+    except ValueError as exc:
+        print(f"WARNING: ANLZ file malformed or incomplete — skipping. ({exc})")
+        sys.exit(0)
     except RuntimeError as exc:
         print(f"ERROR: {exc}")
         sys.exit(1)

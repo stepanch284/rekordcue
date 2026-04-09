@@ -55,7 +55,13 @@ def get_pwav_amplitudes(db, content) -> tuple:
             f"No DAT ANLZ file for track {content.ID}: {dat_path}"
         )
 
-    anlz = AnlzFile.parse_file(dat_path)
+    try:
+        anlz = AnlzFile.parse_file(dat_path)
+    except Exception as exc:
+        raise ValueError(
+            f"ANLZ DAT file is malformed or truncated for track {content.ID} "
+            f"({dat_path}): {exc}"
+        ) from exc
 
     # CRITICAL: do NOT call len(anlz) or anlz.keys() — infinite recursion in 0.4.4
     if 'PWAV' not in anlz.tag_types:
@@ -99,7 +105,13 @@ def get_beat_grid(db, content) -> tuple:
             f"No DAT ANLZ file for track {content.ID}: {dat_path}"
         )
 
-    anlz = AnlzFile.parse_file(dat_path)
+    try:
+        anlz = AnlzFile.parse_file(dat_path)
+    except Exception as exc:
+        raise ValueError(
+            f"ANLZ DAT file is malformed or truncated for track {content.ID} "
+            f"({dat_path}): {exc}"
+        ) from exc
 
     # CRITICAL: do NOT call len(anlz) or anlz.keys() — infinite recursion in 0.4.4
     if 'PQTZ' not in anlz.tag_types:
@@ -148,7 +160,11 @@ def get_pssi_sections(db, content, beat_times_s: np.ndarray) -> list:
         print("[waveform] No EXT file — PSSI unavailable, falling back to energy detection")
         return []
 
-    anlz = AnlzFile.parse_file(ext_path)
+    try:
+        anlz = AnlzFile.parse_file(ext_path)
+    except Exception as exc:
+        print(f"[waveform] EXT file malformed for track {content.ID} ({exc}) — falling back to energy detection")
+        return []
 
     if "PSSI" not in anlz.tag_types:
         print("[waveform] No PSSI tag — phrase analysis not run, falling back to energy detection")

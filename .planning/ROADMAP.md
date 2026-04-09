@@ -7,7 +7,7 @@ RekordCue is built in three distinct layers that must be proven in order: first 
 ## Phases
 
 - [x] **Phase 1: CLI Proof-of-Concept** - One track, one hot cue, full safety pipeline, confirmed in Rekordbox
-- [ ] **Phase 2: Waveform Parser Hardening** - PSSI phrase shortcut, graceful handling of missing/incomplete ANLZ files
+- [x] **Phase 2: Waveform Parser Hardening** - PSSI phrase shortcut, graceful handling of missing/incomplete ANLZ files
 - [ ] **Phase 3: Beat Grid & Bar Math** - Timing foundation — beat grid anchor, bar boundaries, 8-bar alignment
 - [ ] **Phase 4: Full Section Detection** - Energy-based detection of Drop 1, Breakdown, Drop 2, Outro with confidence scoring
 - [ ] **Phase 5: Hot Cue Position Generator** - Compute hot cue A/B/C positions per spec, bar-snapped, no labels
@@ -132,7 +132,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. CLI Proof-of-Concept | 2/2 | Complete | 2026-04-08 |
-| 2. Waveform Parser Hardening | 0/TBD | Not started | - |
+| 2. Waveform Parser Hardening | 1/1 | Complete | 2026-04-09 |
 | 3. Beat Grid & Bar Math | 0/TBD | Not started | - |
 | 4. Full Section Detection | 0/TBD | Not started | - |
 | 5. Hot Cue Position Generator | 0/TBD | Not started | - |

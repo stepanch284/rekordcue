@@ -5,14 +5,13 @@
 See: .planning/PROJECT.md (updated 2026-04-08)
 
 **Core value:** A DnB DJ can select tracks from their Rekordbox library and get correctly placed structural cue points without manually scrubbing through each track.
-**Current focus:** Phase 1 — CLI Proof-of-Concept
+**Current focus:** Phase 2 — Waveform Parser Hardening (complete)
 
 ## Current Position
 
-Phase: 1 of 9 (CLI Proof-of-Concept)
-Plan: 2 of TBD in current phase (01-02 complete)
-Status: In progress
-Last activity: 2026-04-08 — Plan 01-02 complete: Write pipeline + CLI entry point (human-verified)
+Phase: 2 of 9 (Waveform Parser Hardening)
+Status: Complete
+Last activity: 2026-04-09 — Phase 2 complete: parse error wrapping in waveform.py, graceful skip in main.py
 
 Progress: [██░░░░░░░░] ~10%
 
