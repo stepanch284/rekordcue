@@ -23,38 +23,53 @@
 
 ### Section Detection
 
-- [ ] **DETECT-01**: App reads beat grid from `DjmdBeat` to anchor timing at bar 0 (Rekordbox's first beat)
-- [ ] **DETECT-02**: App detects section boundaries using energy-per-bar analysis on the PWAV amplitude array (numpy/scipy sliding window)
+- [ ] **DETECT-01**: App reads beat grid from PQTZ tag in ANLZ .DAT file (via pyrekordbox `get_beat_grid()`) to anchor timing at bar 0
+- [ ] **DETECT-02**: App attempts PSSI phrase analysis first (reading PHRS tag from .EXT if available); falls back to energy-based detection if PSSI unavailable
 - [ ] **DETECT-03**: App aligns all detected section start points to the nearest 8-bar boundary
-- [ ] **DETECT-04**: App detects Drop 1 as the first major energy onset after the intro (16 or 32 bars from bar 0)
-- [ ] **DETECT-05**: App detects the Breakdown as the energy drop before Drop 2 (a multiple of 8 bars in duration)
+- [ ] **DETECT-04**: App detects Drop 1 as the first major energy onset after the intro (mean amplitude threshold) — 16 or 32 bars from bar 0
+- [ ] **DETECT-05**: App detects the Breakdown as the energy drop before Drop 2 (RMS drop + mean amplitude valley) — a multiple of 8 bars in duration
 - [ ] **DETECT-06**: App detects Drop 2 as the second major energy onset following the breakdown
 - [ ] **DETECT-07**: App detects the Outro as the final low-energy section at the end of the track
-- [ ] **DETECT-08**: App validates BPM is in DnB range (155–185 BPM) and flags out-of-range tracks as likely mis-detected
-- [ ] **DETECT-09**: App assigns a confidence score (0–100%) to each section detection and surfaces low-confidence results for manual review
+- [ ] **DETECT-08**: App validates BPM is in DnB range (155–185 BPM) and **hard-blocks** out-of-range tracks (does not place cues, skips processing)
+- [ ] **DETECT-09**: App assigns a confidence score (0–100%) to each section detection; all sections placed regardless, user can delete if needed
+- [ ] **DETECT-10**: App detects when beat grid bar 0 is offset > 100ms from track start, auto-shifts all bar times to align bar 0 with 0ms, prints offset message to CLI
+- [ ] **DETECT-11**: App auto-detects intro length (16-bar vs 32-bar) per track via energy analysis; if intro is low-energy through bar 16, checks through bar 32
+- [ ] **DETECT-12**: App warns user "This track has not been analyzed in Rekordbox yet. Phrase analysis requires Rekordbox analysis. Please analyze in Rekordbox first." and skips processing
+- [ ] **DETECT-13**: App treats half-tempo and unusual BPM tracks as informational only; user sees warning but processing continues (user responsible for correction)
 
 ### Cue Writing
 
-- [ ] **CUE-01**: Hot cue A (slot 0) placed at bar 0 (track start / intro anchor) — always
-- [ ] **CUE-02**: Hot cue B (slot 1) placed at bar 16 (mid-intro navigation point) — always
-- [ ] **CUE-03**: Hot cue C (slot 2) placed 8 bars before Drop 1 (pre-drop mix-in point) — if Drop 1 is beyond bar 8
+- [ ] **CUE-01**: Hot cue A (kind=1, slot 0) placed at bar 0 (track start / intro anchor) — always
+- [ ] **CUE-02**: Hot cue B (kind=2, slot 1) placed at bar 16 (mid-intro navigation point) — always
+- [ ] **CUE-03**: Hot cue C (kind=3, slot 2) placed 8 bars before Drop 1 (pre-drop mix-in point) — if Drop 1 is beyond bar 8
 - [ ] **CUE-04**: Memory cue placed at Drop 1 (exact bar where first drop begins)
 - [ ] **CUE-05**: Memory cue placed at the start of the Breakdown before Drop 2 (end of post-drop phrase, multiple of 8 bars)
 - [ ] **CUE-06**: Memory cue placed at Drop 2
 - [ ] **CUE-07**: Memory cue placed at the start of the Outro (final section of the track)
-- [ ] **CUE-08**: Cues have no custom text label — written exactly as Rekordbox does when placing cues manually (hot cues use their slot letter A/B/C, memory cues have no name)
+- [ ] **CUE-08**: Cues have **no custom text label** — written exactly as Rekordbox does when placing cues manually (hot cues use their slot, memory cues have no name); color coding carries the meaning
 - [ ] **CUE-09**: App does not touch cues in hot cue slots D–H or memory cues outside its target bar positions (preserves manually placed cues)
 - [ ] **CUE-10**: App is idempotent — re-running replaces hot cue slots A, B, C and memory cues at the same bar positions, identified by position + color match
-- [ ] **CUE-11**: All cue positions are snapped to the nearest bar boundary using the Rekordbox beat grid
+- [ ] **CUE-11**: All cue positions are snapped to the nearest **8-bar boundary** (not arbitrary bar) using the Rekordbox beat grid
+
+### Batch Processing & Existing Cues
+
+- [ ] **BATCH-01**: App skips any track that already has cues in hot cue slots A, B, or C (preserves manual work)
+- [ ] **BATCH-02**: App processes all analyzed tracks in a specified folder; looks up track IDs in Rekordbox database
+- [ ] **BATCH-03**: App produces a summary report after batch processing: count of tracks processed, skipped (with reasons: BPM out of range, existing cues, missing ANLZ data), and failed
+- [ ] **BATCH-04**: If a track fails during batch processing, app logs the error and continues with remaining tracks (fail-safe batch)
 
 ### Desktop UI
 
-- [ ] **UI-01**: Main window shows track list from Rekordbox library (`DjmdContent`) with columns: title, artist, BPM, duration, cue status
+- [ ] **UI-01**: Main window shows track list from Rekordbox library (`DjmdContent`) with columns: title, artist, BPM, duration, **analysis status indicator** (checkmark if Rekordbox analyzed, "?" if not)
 - [ ] **UI-02**: User can select one or more tracks for processing
-- [ ] **UI-03**: UI shows proposed cue positions before applying (waveform-aligned timestamp list, not necessarily rendered waveform)
+- [ ] **UI-03**: Visual waveform canvas shows proposed cue positions as vertical marker lines with section colors before Apply button
 - [ ] **UI-04**: Apply button writes cues to `master.db` for selected tracks with progress feedback
-- [ ] **UI-05**: Settings panel: color scheme per section, 16/32-bar intro toggle, overwrite policy for existing `[RC]` cues
-- [ ] **UI-06**: App shows backup file path after successful write
+- [ ] **UI-05**: Settings panel: configurable colors per section type (Intro/Drop1/Breakdown/Drop2/Outro), persistent to JSON config file in `%APPDATA%\RekordCue\`
+- [ ] **UI-06**: App shows backup file path and CLI summary after successful write ("X tracks processed, Y skipped, Z failed")
+- [ ] **UI-07**: Folder batch mode: user specifies Rekordbox library folder; app processes all analyzed tracks, shows summary of processed/skipped
+- [ ] **UI-08**: Per-track intro length toggle (16-bar / 32-bar) shown before Apply if auto-detection is ambiguous
+- [ ] **UI-09** *(Phase 9)*: Settings panel shows "Analyze tracks in Rekordbox" prompt with direct link/button guidance
+- [ ] **UI-10** *(Phase 9)*: Color picker UI per section type with preview of selected colors
 
 ### Safety & Reliability
 
@@ -119,6 +134,10 @@
 | DETECT-07 | Phase 4 | Pending |
 | DETECT-08 | Phase 3 | Pending |
 | DETECT-09 | Phase 4 | Pending |
+| DETECT-10 | Phase 3 | Pending |
+| DETECT-11 | Phase 3 | Pending |
+| DETECT-12 | Phase 4 | Pending |
+| DETECT-13 | Phase 4 | Pending |
 | CUE-01 | Phase 5 | Pending |
 | CUE-02 | Phase 5 | Pending |
 | CUE-03 | Phase 5 | Pending |
@@ -130,20 +149,28 @@
 | CUE-09 | Phase 6 | Pending |
 | CUE-10 | Phase 6 | Pending |
 | CUE-11 | Phase 5 | Pending |
+| BATCH-01 | Phase 8 | Pending |
+| BATCH-02 | Phase 8 | Pending |
+| BATCH-03 | Phase 8 | Pending |
+| BATCH-04 | Phase 8 | Pending |
 | UI-01 | Phase 8 | Pending |
 | UI-02 | Phase 8 | Pending |
 | UI-03 | Phase 9 | Pending |
 | UI-04 | Phase 8 | Pending |
 | UI-05 | Phase 9 | Pending |
 | UI-06 | Phase 8 | Pending |
+| UI-07 | Phase 8 | Pending |
+| UI-08 | Phase 9 | Pending |
+| UI-09 | Phase 9 | Pending |
+| UI-10 | Phase 9 | Pending |
 | SAFE-01 | Phase 1 | Complete |
 | SAFE-02 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 36 total
-- Mapped to phases: 36
+- v1 requirements: 48 total (added DETECT-10-13, BATCH-01-04, UI-08-10, plus existing)
+- Mapped to phases: 48
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-08*
-*Last updated: 2026-04-08 — Phase 1 requirements marked Complete after verification*
+*Last updated: 2026-04-09 — Added hybrid energy detection, folder batch processing, existing cue skipping, and confidence preview per user design decisions*
