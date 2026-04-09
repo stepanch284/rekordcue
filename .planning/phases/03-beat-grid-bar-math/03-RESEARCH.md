@@ -534,17 +534,19 @@ ASVS V5 (Input Validation) applies minimally: the BPM value from DjmdContent is 
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should BPM-out-of-range tracks be hard-blocked (exit) or soft-warned (continue)?**
    - What we know: DETECT-08 says "flagged with a visible warning before any cue is written"
    - What's unclear: Does "before any cue is written" mean block the whole run, or just print and continue?
    - Recommendation: Soft-warn by default (print warning, continue). Hard-block can be added as a CLI flag. Phase 3 implements the check; blocking behavior is a policy for Phase 5/6.
+   - **RESOLVED: Soft-warn. Plan 02 Task 1 prints the warning and continues processing. Hard-block is deferred.**
 
 2. **Should compute_bar_energies() be exposed in waveform.py or bar_math.py?**
    - What we know: It requires ANLZ file I/O (db.get_anlz_path, AnlzFile.parse_file)
    - What's unclear: Whether to keep all ANLZ I/O in waveform.py or split by concern
    - Recommendation: Keep in bar_math.py since it's called as part of the analysis pipeline, not parsing. Accept the import of AnlzFile in bar_math.py.
+   - **RESOLVED: bar_math.py (Option B). Plan 01 creates bar_math.py with compute_bar_energies(). AnlzFile import accepted in bar_math.py.**
 
 ---
 
