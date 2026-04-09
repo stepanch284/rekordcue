@@ -49,11 +49,14 @@ Plans:
 **Depends on**: Phase 1
 **Requirements**: DETECT-01, DETECT-02, DETECT-03, DETECT-08
 **Success Criteria** (what must be TRUE):
-  1. The app reads DjmdBeat for a track and derives first_beat_ms and BPM, producing a list of bar start times in milliseconds that are audibly on-grid when previewed in Rekordbox
+  1. The app reads the PQTZ beat grid from the ANLZ .DAT file and derives bar start times in milliseconds that are audibly on-grid when previewed in Rekordbox
   2. Given a raw detection position in milliseconds, the app snaps it to the nearest 8-bar boundary using the beat grid anchor
-  3. Tracks where the beat grid BPM falls outside 155–185 BPM are flagged with a visible warning ("likely mis-detected BPM") before any cue is written
-  4. Energy-per-bar values computed from the PWAV array using the derived bar boundaries produce a meaningful signal that visually correlates with the track's loud/quiet sections
-**Plans**: TBD
+  3. Tracks where the beat grid BPM falls outside 155-185 BPM are flagged with a visible warning ("likely mis-detected BPM") before any cue is written
+  4. Energy-per-bar values computed from the PWV3 waveform array using the derived bar boundaries produce a meaningful signal that visually correlates with the track's loud/quiet sections
+**Plans:** 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — TDD: bar_math.py module with BPM validation, 8-bar snap, energy-per-bar computation + tests
+- [ ] 03-02-PLAN.md — Integrate bar_math into main.py, replace ad-hoc snap_to_bar
 
 ### Phase 4: Full Section Detection
 **Goal**: Reliably detect all structural sections of a DnB track — Drop 1, Breakdown, Drop 2, and Outro — from PWAV energy data, with per-section confidence scores.
@@ -64,7 +67,7 @@ Plans:
   2. The detector identifies a Breakdown region (energy valley after Drop 1) and aligns its start to the nearest 8-bar boundary
   3. Drop 2 is detected as the second major energy onset following the Breakdown
   4. Outro is detected as the final sustained low-energy region in the last quarter of the track
-  5. Each detected section has a confidence score (0–100%); sections with confidence below a threshold are flagged in CLI output for manual review
+  5. Each detected section has a confidence score (0-100%); sections with confidence below a threshold are flagged in CLI output for manual review
   6. When no Breakdown is detectable (full-power roller), the detector omits the Breakdown and Drop 2 cues and logs the reason rather than placing a wrong cue
 **Plans**: TBD
 
@@ -86,7 +89,7 @@ Plans:
 **Requirements**: CUE-09, CUE-10, SAFE-02
 **Success Criteria** (what must be TRUE):
   1. Running the tool twice on the same track produces exactly the same set of cues in master.db with no duplicates — hot cue slots A/B/C and memory cues at the same bar positions are replaced, not added again
-  2. Hot cue slots D–H and any memory cues at positions the tool did not generate are untouched after a write
+  2. Hot cue slots D-H and any memory cues at positions the tool did not generate are untouched after a write
   3. When a track has existing hot cues in slots A, B, or C placed manually by the user, the tool replaces only its own prior cues (identified by position + color match) and does not delete the user's cues in other slots
   4. Tracks with missing or corrupt ANLZ files, empty beat grids, or unanalyzed state are skipped cleanly without writing any rows or triggering a rollback on other tracks in the same batch
 **Plans**: TBD
@@ -133,7 +136,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. CLI Proof-of-Concept | 2/2 | Complete | 2026-04-08 |
 | 2. Waveform Parser Hardening | 1/1 | Complete | 2026-04-09 |
-| 3. Beat Grid & Bar Math | 0/TBD | Not started | - |
+| 3. Beat Grid & Bar Math | 0/2 | In progress | - |
 | 4. Full Section Detection | 0/TBD | Not started | - |
 | 5. Hot Cue Position Generator | 0/TBD | Not started | - |
 | 6. Cue Writer & Idempotency | 0/TBD | Not started | - |
