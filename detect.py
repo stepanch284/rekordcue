@@ -398,3 +398,140 @@ def detect_first_onset(
     print(f"[detect] Fallback onset at bar {onset_bar_index}, {onset_time_s:.3f}s")
 
     return onset_time_s, onset_bar_index
+
+
+# ============================================================================
+# RMS HYBRID DETECTION (RESEARCH - Optional for v1.1)
+# ============================================================================
+
+RMS_HIGH_THRESHOLD_RATIO = 1.8      # energy peak: x baseline (same as Simple Threshold)
+RMS_LOW_RATIO = 0.6                 # energy valley: x baseline (same as Simple Threshold)
+RMS_SHARP_THRESHOLD = 1.3           # RMS spike threshold for detecting transitions
+
+
+def compute_rms_per_bar(bar_energies: np.ndarray) -> np.ndarray:
+    """Compute RMS (Root Mean Square) of energy derivatives per bar.
+
+    High RMS = sharp transitions (drops, breakdowns).
+    Low RMS = smooth, steady regions (intro, sustained high energy).
+
+    Args:
+        bar_energies: Energy per bar array.
+
+    Returns:
+        RMS variance array (same shape as bar_energies).
+    """
+    if len(bar_energies) < 2:
+        return np.zeros_like(bar_energies)
+
+    diffs = np.abs(np.diff(bar_energies))
+    # Pad to match original length
+    diffs_padded = np.concatenate([[diffs[0]], diffs])
+
+    # Window RMS: compute RMS over ~4-bar windows
+    rms_arr = np.zeros(len(bar_energies), dtype=np.float64)
+    for i in range(len(bar_energies)):
+        window_start = max(0, i - 2)
+        window_end = min(len(diffs_padded), i + 3)
+        window = diffs_padded[window_start:window_end]
+        rms_arr[i] = float(np.sqrt(np.mean(window ** 2))) if len(window) > 0 else 0.0
+
+    return rms_arr
+
+
+def detect_sections_rms_hybrid(bar_energies: np.ndarray,
+                               bar_times_ms: np.ndarray,
+                               intro_bars: int = 16) -> dict:
+    """Hybrid detection using mean energy + RMS variance.
+
+    Similar to Simple Threshold but adds RMS validation to avoid
+    false positives from gentle fills or gradual energy changes.
+
+    Args:
+        bar_energies: Energy per bar (numpy array, float)
+        bar_times_ms: Bar start times in ms (for snapping)
+        intro_bars: Length of intro section (default 16)
+
+    Returns:
+        Dict with keys:
+          "drop1_bar", "drop1_confidence"
+          "breakdown_bar", "breakdown_confidence"
+          "drop2_bar", "drop2_confidence"
+          "outro_bar", "outro_confidence"
+    """
+    result = {
+        "drop1_bar": None, "drop1_confidence": 0,
+        "breakdown_bar": None, "breakdown_confidence": 0,
+        "drop2_bar": None, "drop2_confidence": 0,
+        "outro_bar": None, "outro_confidence": 0,
+    }
+
+    if len(bar_energies) == 0 or len(bar_times_ms) == 0:
+        return result
+
+    # Compute thresholds from intro baseline
+    intro_baseline = np.mean(bar_energies[0:min(intro_bars, len(bar_energies))])
+    if intro_baseline == 0:
+        intro_baseline = 1.0
+
+    high_threshold = intro_baseline * RMS_HIGH_THRESHOLD_RATIO
+    low_threshold = intro_baseline * RMS_LOW_RATIO
+
+    # Compute RMS per bar
+    rms_arr = compute_rms_per_bar(bar_energies)
+    rms_baseline = np.mean(rms_arr[0:min(intro_bars, len(rms_arr))])
+    if rms_baseline == 0:
+        rms_baseline = 1.0
+
+    # Scan for sections
+    drop1_found = False
+    breakdown_found = False
+    drop1_bar = None
+
+    for bar_idx in range(intro_bars, len(bar_energies)):
+        energy = bar_energies[bar_idx]
+        rms = rms_arr[bar_idx] if bar_idx < len(rms_arr) else 0
+
+        # Drop 1: high energy AND sharp transition (RMS spike)
+        if not drop1_found and energy > high_threshold and rms > rms_baseline * RMS_SHARP_THRESHOLD:
+            result["drop1_bar"] = bar_idx
+            result["drop1_confidence"] = compute_section_confidence(bar_energies, bar_idx, "drop", intro_baseline)
+            drop1_found = True
+            drop1_bar = bar_idx
+
+        # Breakdown: low energy AND stable RMS (smooth valley)
+        # Limit search to within 64 bars of drop1 and not in final 20%
+        elif (drop1_found and not breakdown_found and energy <= low_threshold and
+              rms < rms_baseline * 0.8 and
+              (drop1_bar is None or bar_idx <= drop1_bar + 64) and
+              bar_idx < len(bar_energies) * 0.8):
+            valley_duration = 0
+            for j in range(bar_idx, min(bar_idx + 8, len(bar_energies))):
+                if bar_energies[j] <= low_threshold:
+                    valley_duration += 1
+            if valley_duration >= 2:
+                result["breakdown_bar"] = bar_idx
+                result["breakdown_confidence"] = compute_section_confidence(bar_energies, bar_idx, "breakdown", intro_baseline)
+                breakdown_found = True
+
+        # Drop 2: high energy again with RMS spike
+        elif breakdown_found and energy > high_threshold and rms > rms_baseline * RMS_SHARP_THRESHOLD and result["drop2_bar"] is None:
+            result["drop2_bar"] = bar_idx
+            result["drop2_confidence"] = compute_section_confidence(bar_energies, bar_idx, "drop", intro_baseline)
+
+    # Outro: final 16 bars below threshold
+    outro_energy = np.mean(bar_energies[-16:]) if len(bar_energies) >= 16 else np.mean(bar_energies)
+    if outro_energy < intro_baseline * ENERGY_THRESHOLDS["OUTRO_ENERGY_RATIO"]:
+        outro_bar = max(len(bar_energies) - 16, 0)
+        result["outro_bar"] = outro_bar
+        result["outro_confidence"] = compute_section_confidence(bar_energies, outro_bar, "outro", intro_baseline)
+
+    # Snap all detected positions to 8-bar boundaries
+    for section_name in ["drop1", "breakdown", "drop2", "outro"]:
+        bar_key = f"{section_name}_bar"
+        if result[bar_key] is not None:
+            bar_ms = float(bar_times_ms[min(result[bar_key], len(bar_times_ms) - 1)])
+            snapped_ms, snapped_bar_idx = snap_to_8bar_boundary(bar_ms, bar_times_ms)
+            result[bar_key] = snapped_bar_idx
+
+    return result
