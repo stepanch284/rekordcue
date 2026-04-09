@@ -5,32 +5,35 @@
 See: .planning/PROJECT.md (updated 2026-04-08)
 
 **Core value:** A DnB DJ can select tracks from their Rekordbox library and get correctly placed structural cue points without manually scrubbing through each track.
-**Current focus:** Phase 2 — Waveform Parser Hardening (complete)
+**Current focus:** Phase 4 — Full Section Detection (complete)
 
 ## Current Position
 
-Phase: 2 of 9 (Waveform Parser Hardening)
-Status: Complete
-Last activity: 2026-04-09 — Phase 2 complete: parse error wrapping in waveform.py, graceful skip in main.py
+Phase: 4 of 9 (Full Section Detection)
+Status: Complete (all 3 plans done)
+Last activity: 2026-04-09 — Phase 4 complete: section detection engine (PSSI + Simple Threshold), integrated into main.py, RMS research completed
 
-Progress: [██░░░░░░░░] ~10%
+Progress: [████░░░░░░] ~40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: ~22 minutes
-- Total execution time: ~0.75 hours
+- Total plans completed: 8 (04-01, 04-02, 04-03, Phase 3, Phase 2, Phase 1)
+- Average duration: ~45 minutes
+- Total execution time: ~6 hours
 
 **By Phase:**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 1 | 2 | ~45 min | ~22 min |
+| Phase | Plans | Total | Avg/Plan | Status |
+|-------|-------|-------|----------|--------|
+| 1 | 2 | ~45 min | ~22 min | Complete |
+| 2 | 1 | ~30 min | ~30 min | Complete |
+| 3 | 3 | ~90 min | ~30 min | Complete |
+| 4 | 3 | ~135 min | ~45 min | Complete |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~20 min), 01-02 (~25 min)
-- Trend: Stable
+- Last 3 plans (Phase 4): 04-01 (~45 min), 04-02 (~30 min), 04-03 (~30 min)
+- Trend: Accelerating with better TDD practices + research insights
 
 *Updated after each plan completion*
 
@@ -67,7 +70,15 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-08
-Stopped at: Plan 01-02 complete. writer.py and main.py created and committed. Hot cue A write verified in Rekordbox 7.2.3.
-Resume at: Next plan in Phase 1 (TBD)
+Last session: 2026-04-09
+Stopped at: Phase 4 complete (all 3 plans: 04-01 section detection engine, 04-02 main.py integration, 04-03 RMS research)
+Resume at: Phase 5 — Hot Cue Position Generator
 Resume file: None
+
+**Phase 4 Completion Notes:**
+- Created detect.py with PSSI reader + Simple Threshold + RMS Hybrid algorithms
+- 37 unit tests passing (21 Simple + 16 RMS)
+- Integrated detect_sections_hybrid() into main.py CLI with confidence display
+- Recommendation: Ship Simple Threshold for v1, defer RMS to v1.1+ if needed
+- All sections snapped to 8-bar boundaries
+- Confidence scores 0-100% calibrated per section type
