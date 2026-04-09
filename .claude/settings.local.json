@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs commit 'docs: initialize project' --files .planning/PROJECT.md)",
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs config-new-project '{\"mode\":\"yolo\",\"granularity\":\"fine\",\"parallelization\":true,\"commit_docs\":true,\"model_profile\":\"balanced\",\"workflow\":{\"research\":true,\"plan_check\":true,\"verifier\":true,\"nyquist_validation\":true}}')",
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs commit 'chore: add project config' --files .planning/config.json)",
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs commit 'docs: add domain research' --files .planning/research/STACK.md .planning/research/FEATURES.md .planning/research/ARCHITECTURE.md .planning/research/PITFALLS.md)",
+      "Bash(gh auth:*)",
+      "Bash(gh --version)",
+      "Bash(where gh:*)",
+      "Bash(winget list:*)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Users/stipecek/AppData/Local/**)",
+      "Bash(powershell.exe -Command \"Get-Command gh -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source\")",
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs commit 'docs: finalize requirements' --files .planning/REQUIREMENTS.md)",
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs commit 'docs: add roadmap and state' --files .planning/ROADMAP.md .planning/STATE.md .planning/REQUIREMENTS.md)",
+      "Bash(git credential-manager:*)",
+      "WebSearch",
+      "Bash(pip show:*)",
+      "Bash(python -c \"import pyrekordbox; print\\(dir\\(pyrekordbox\\)\\)\")",
+      "Bash(python -c \"from pyrekordbox import Rekordbox6Database; help\\(Rekordbox6Database.__init__\\)\")",
+      "Bash(python3 -c \"import pyrekordbox; print\\(dir\\(pyrekordbox\\)\\)\")",
+      "Bash(C:/Users/stipecek/AppData/Local/Programs/Python/Python312/python.exe -c \"import pyrekordbox; print\\(dir\\(pyrekordbox\\)\\)\")",
+      "Bash(C:/Users/stipecek/AppData/Local/Programs/Python/Python312/python.exe -c ':*)",
+      "Bash(C:/Users/stipecek/AppData/Local/Programs/Python/Python312/python.exe -c \"import os; size = os.path.getsize\\(r'C:\\\\Users\\\\stipecek\\\\Documents\\\\VisualStudioCode\\\\novej\\\\.planning\\\\phases\\\\01-cli-proof-of-concept\\\\01-RESEARCH.md'\\); print\\(f'File size: {size} bytes \\({size//1024}KB\\)'\\)\")",
+      "Bash(ls \"C:/Users/stipecek/Documents/VisualStudioCode/novej/.planning/phases/01-cli-proof-of-concept/\"*CONTEXT*)",
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs commit 'docs\\(01\\): add phase 1 research and plans' --files .planning/phases/01-cli-proof-of-concept/01-RESEARCH.md .planning/phases/01-cli-proof-of-concept/01-01-PLAN.md .planning/phases/01-cli-proof-of-concept/01-02-PLAN.md)",
+      "Bash(python -c \"import pyrekordbox; import inspect; src = inspect.getsource\\(pyrekordbox.Rekordbox6Database.commit\\); print\\(src\\)\")",
+      "Bash(python3 -c \"import pyrekordbox; print\\(pyrekordbox.__file__\\)\")"
+    ]
+  }
+}

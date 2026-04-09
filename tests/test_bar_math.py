@@ -13,6 +13,7 @@ import pytest
 
 from bar_math import (
     validate_bpm_range, snap_to_8bar_boundary, compute_bar_energies,
+    detect_grid_offset, shift_bar_times, detect_intro_length,
     DNB_BPM_MIN, DNB_BPM_MAX
 )
 
@@ -264,3 +265,113 @@ def test_compute_bar_energies_missing_data():
 
     with pytest.raises(ValueError, match="No waveform data available"):
         compute_bar_energies(mock_db, mock_content, bar_times_s)
+
+
+# ============================================================================
+# Grid Offset Detection Tests
+# ============================================================================
+
+def test_detect_grid_offset_aligned(bar_times_ms_174bpm):
+    """Test: bar_times_ms[0] = 43.0, offset < 100ms, returns 0 (aligned)."""
+    offset = detect_grid_offset(bar_times_ms_174bpm)
+    assert offset == 0
+
+
+def test_detect_grid_offset_misaligned():
+    """Test: bar_times_ms[0] = 250.0, offset > 100ms, returns 250."""
+    bar_times_ms = np.array([250.0, 1629.31, 3008.62, 4387.93], dtype=np.float64)
+    offset = detect_grid_offset(bar_times_ms)
+    assert offset == 250
+
+
+def test_detect_grid_offset_boundary_low():
+    """Test: bar_times_ms[0] = 50.0, offset < 100ms threshold, returns 0."""
+    bar_times_ms = np.array([50.0, 1429.31, 2808.62], dtype=np.float64)
+    offset = detect_grid_offset(bar_times_ms)
+    assert offset == 0
+
+
+def test_detect_grid_offset_boundary_high():
+    """Test: bar_times_ms[0] = 150.0, offset > 100ms threshold, returns 150."""
+    bar_times_ms = np.array([150.0, 1529.31, 2908.62], dtype=np.float64)
+    offset = detect_grid_offset(bar_times_ms)
+    assert offset == 150
+
+
+def test_detect_grid_offset_empty():
+    """Test: empty bar_times_ms returns 0."""
+    bar_times_ms = np.array([], dtype=np.float64)
+    offset = detect_grid_offset(bar_times_ms)
+    assert offset == 0
+
+
+# ============================================================================
+# Bar Time Shifting Tests
+# ============================================================================
+
+def test_shift_bar_times_backward(bar_times_ms_174bpm):
+    """Test: Shift all bars backward by offset, bar 0 aligns to 0ms."""
+    offset_ms = 43
+    shifted = shift_bar_times(bar_times_ms_174bpm, offset_ms)
+
+    # Bar 0 should be ~0 after shift
+    assert abs(shifted[0] - 0.0) < 1.0
+    # Shifted array should not be same object (non-mutating)
+    assert shifted is not bar_times_ms_174bpm
+    # Length preserved
+    assert len(shifted) == len(bar_times_ms_174bpm)
+
+
+def test_shift_bar_times_no_negative_values():
+    """Test: Shift never produces negative values (clamped at 0)."""
+    bar_times_ms = np.array([100.0, 500.0, 1000.0], dtype=np.float64)
+    offset_ms = 200  # larger than bar 0
+    shifted = shift_bar_times(bar_times_ms, offset_ms)
+
+    # First bar would be -100, clamped to 0
+    assert shifted[0] == 0.0
+    # Other bars: 500-200=300, 1000-200=800
+    assert shifted[1] == 300.0
+    assert shifted[2] == 800.0
+    # All values >= 0
+    assert np.all(shifted >= 0)
+
+
+def test_shift_bar_times_zero_offset():
+    """Test: Zero offset returns equivalent array (non-mutating)."""
+    bar_times_ms = np.array([43.0, 1422.31, 2801.62], dtype=np.float64)
+    shifted = shift_bar_times(bar_times_ms, 0)
+
+    # Values unchanged
+    assert np.allclose(shifted, bar_times_ms)
+    # But different object
+    assert shifted is not bar_times_ms
+
+
+# ============================================================================
+# Intro Length Detection Tests
+# ============================================================================
+
+def test_detect_intro_length_16bar(bar_energies_structured):
+    """Test: 16-bar intro detected (energy jumps at bar 16)."""
+    intro_len = detect_intro_length(bar_energies_structured)
+    assert intro_len == 16
+
+
+def test_detect_intro_length_32bar(bar_energies_32bar_intro):
+    """Test: 32-bar intro detected (energy jumps at bar 32)."""
+    intro_len = detect_intro_length(bar_energies_32bar_intro)
+    assert intro_len == 32
+
+
+def test_detect_intro_length_ambiguous(bar_energies_ambiguous):
+    """Test: All low energy (ambiguous) defaults to 16-bar."""
+    intro_len = detect_intro_length(bar_energies_ambiguous)
+    assert intro_len == 16
+
+
+def test_detect_intro_length_short_track():
+    """Test: Track with < 32 bars defaults to 16."""
+    bar_energies = np.ones(20, dtype=np.float64) * 5.0
+    intro_len = detect_intro_length(bar_energies)
+    assert intro_len == 16

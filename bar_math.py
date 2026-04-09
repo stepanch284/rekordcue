@@ -117,3 +117,74 @@ def _bars_from_amplitude(amp: np.ndarray, bar_times_s: np.ndarray,
         window = amp[idx_start:idx_end]
         energies[i] = float(np.mean(window)) if len(window) > 0 else 0.0
     return energies
+
+
+def detect_grid_offset(bar_times_ms: np.ndarray) -> int:
+    """Detect if beat grid bar 0 is offset from track start (0ms).
+
+    Returns offset in ms if bar 0 position > ~100ms, else 0.
+    This handles Rekordbox's occasional misaligned beat grid analysis.
+
+    Args:
+        bar_times_ms: Bar start times in milliseconds from get_beat_grid.
+
+    Returns:
+        int: Offset in milliseconds if offset > 100ms threshold, else 0.
+    """
+    if len(bar_times_ms) == 0:
+        return 0
+    first_bar_ms = int(bar_times_ms[0])
+    OFFSET_THRESHOLD_MS = 100
+    if first_bar_ms > OFFSET_THRESHOLD_MS:
+        return first_bar_ms
+    return 0
+
+
+def shift_bar_times(bar_times_ms: np.ndarray, offset_ms: int) -> np.ndarray:
+    """Shift all bar times backward to align bar 0 at 0ms.
+
+    Subtracts offset_ms from all values, clamps result >= 0.
+    Returns new array (non-mutating).
+
+    Args:
+        bar_times_ms: Bar start times in milliseconds.
+        offset_ms:    Offset to subtract from all bar times.
+
+    Returns:
+        np.ndarray: New array with shifted times, clamped at 0.
+    """
+    shifted = bar_times_ms - offset_ms
+    return np.maximum(shifted, 0)  # clamp at 0
+
+
+def detect_intro_length(bar_energies: np.ndarray) -> int:
+    """Auto-detect intro length: 16-bar or 32-bar.
+
+    Check if energy rises sharply at bar 16 (suggesting 16-bar intro)
+    or bar 32 (suggesting 32-bar intro).
+
+    Args:
+        bar_energies: Energy per bar (numpy array).
+
+    Returns:
+        int: 16 or 32 indicating detected intro length.
+    """
+    if len(bar_energies) < 32:
+        return 16  # track too short, default to 16
+
+    # Compare energy windows
+    intro_16_energy = float(np.mean(bar_energies[0:16]))
+    drop1_energy = float(np.mean(bar_energies[16:32]))
+    intro_32_energy = float(np.mean(bar_energies[0:32]))
+    drop2_energy = float(np.mean(bar_energies[32:48])) if len(bar_energies) >= 48 else 0.0
+
+    # If energy at bar 16 is significantly higher, intro is 16-bar
+    if drop1_energy > intro_16_energy * 1.5:
+        return 16
+
+    # If energy at bar 32 is significantly higher, intro is 32-bar
+    if drop2_energy > intro_32_energy * 1.5:
+        return 32
+
+    # Ambiguous: default to 16
+    return 16
