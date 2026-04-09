@@ -20,6 +20,11 @@ from db import open_database, validate_schema, get_track
 from waveform import get_pwav_amplitudes, get_beat_grid, get_pssi_sections
 from detect import detect_sections_from_pssi, detect_first_onset
 from writer import safe_write_all
+from bar_math import (
+    validate_bpm_range, snap_to_8bar_boundary, compute_bar_energies,
+    detect_grid_offset, shift_bar_times, detect_intro_length,
+    DNB_BPM_MIN, DNB_BPM_MAX
+)
 
 
 def main():
@@ -41,6 +46,32 @@ def main():
         bar_times_s, bpm, all_beat_times_s = get_beat_grid(db, content)
         print(f"Beat grid: {len(bar_times_s)} bars, BPM={bpm:.1f}")
 
+        # BPM validation (hard-block per DETECT-08)
+        bpm_val, bpm_ok = validate_bpm_range(content)
+        if not bpm_ok:
+            print(f"WARNING: BPM {bpm_val:.1f} is outside DnB range {DNB_BPM_MIN:.0f}–{DNB_BPM_MAX:.0f}.")
+            print(f"         Likely mis-detected BPM. Fix in Rekordbox before placing cues.")
+            # Continue with warning (fail-safe per FEATURE_DECISIONS)
+
+        # Convert to ms for offset detection
+        bar_times_ms = bar_times_s * 1000.0
+
+        # Detect grid offset (DETECT-10)
+        offset_ms = detect_grid_offset(bar_times_ms)
+        if offset_ms > 0:
+            print(f"[DEBUG] Grid offset detected: bar 0 is at {offset_ms:.0f}ms. Auto-shifting to 0ms.")
+            bar_times_ms = shift_bar_times(bar_times_ms, offset_ms)
+            bar_times_s = bar_times_ms / 1000.0
+
+        # Compute bar energies (for logging & future use)
+        try:
+            bar_energies = compute_bar_energies(db, content, bar_times_s)
+            print(f"[DEBUG] Bar energies computed: {len(bar_energies)} bars, "
+                  f"range [{bar_energies.min():.1f}, {bar_energies.max():.1f}]")
+        except ValueError as exc:
+            print(f"[DEBUG] Could not compute bar energies: {exc}")
+            bar_energies = None
+
         # Detect sections
         pssi_sections = get_pssi_sections(db, content, all_beat_times_s)
         if pssi_sections:
@@ -50,32 +81,41 @@ def main():
             drop1_s, _ = detect_first_onset(amplitudes, bar_times_s, length_s)
             sections = {"drop1_s": drop1_s, "breakdown_s": None, "drop2_s": None, "outro_s": None}
 
-        # Helper: snap a time in seconds to the nearest bar boundary, return ms
-        def snap_to_bar(time_s):
-            if time_s is None:
-                return None
-            diffs = [abs(float(t) - time_s) for t in bar_times_s]
-            idx = diffs.index(min(diffs))
-            return int(bar_times_s[idx] * 1000)  # type: ignore[arg-type]
+        # Detect intro length (DETECT-11)
+        intro_bars = 16  # default
+        if bar_energies is not None:
+            intro_bars = detect_intro_length(bar_energies)
+            print(f"[DEBUG] Detected intro length: {intro_bars} bars")
 
-        # Bar 0 and bar 16 times in ms
-        bar0_ms = int(bar_times_s[0] * 1000)   # type: ignore[arg-type]
-        bar16_ms = int(bar_times_s[16] * 1000) if len(bar_times_s) > 16 else None  # type: ignore[arg-type]
+        # Snap all section positions to 8-bar boundaries (DETECT-03)
+        drop1_ms, drop1_bar = (None, None)
+        if sections["drop1_s"] is not None:
+            drop1_ms, drop1_bar = snap_to_8bar_boundary(sections["drop1_s"] * 1000.0, bar_times_ms)
 
-        # 8 bars before Drop 1 — find bar index of drop1, subtract 8
-        drop1_ms = snap_to_bar(sections["drop1_s"])
-        pre_drop_ms = None
-        if drop1_ms is not None:
-            drop1_bar_idx = min(
-                range(len(bar_times_s)),
-                key=lambda i: abs(int(bar_times_s[i] * 1000) - drop1_ms)  # type: ignore[arg-type]
-            )
-            if drop1_bar_idx >= 8:
-                pre_drop_ms = int(bar_times_s[drop1_bar_idx - 8] * 1000)  # type: ignore[arg-type]
+        breakdown_ms, breakdown_bar = (None, None)
+        if sections["breakdown_s"] is not None:
+            breakdown_ms, breakdown_bar = snap_to_8bar_boundary(sections["breakdown_s"] * 1000.0, bar_times_ms)
 
-        breakdown_ms = snap_to_bar(sections["breakdown_s"])
-        drop2_ms = snap_to_bar(sections["drop2_s"])
-        outro_ms = snap_to_bar(sections["outro_s"])
+        drop2_ms, drop2_bar = (None, None)
+        if sections["drop2_s"] is not None:
+            drop2_ms, drop2_bar = snap_to_8bar_boundary(sections["drop2_s"] * 1000.0, bar_times_ms)
+
+        outro_ms, outro_bar = (None, None)
+        if sections["outro_s"] is not None:
+            outro_ms, outro_bar = snap_to_8bar_boundary(sections["outro_s"] * 1000.0, bar_times_ms)
+
+        # Hot cue A and B (always at bar 0 and bar 16)
+        bar0_ms = int(bar_times_ms[0])
+        bar16_ms = int(bar_times_ms[16]) if len(bar_times_ms) > 16 else None
+
+        # Hot cue C: 8 bars before Drop 1, but respect intro length
+        hot_cue_c_ms = None
+        if drop1_ms is not None and drop1_bar is not None:
+            if drop1_bar > 8:  # if drop1 is beyond bar 8
+                hot_cue_c_ms = int(bar_times_ms[drop1_bar - 8])
+                print(f"[DEBUG] Hot cue C placed at bar {drop1_bar - 8}")
+            else:
+                print(f"[DEBUG] Hot cue C omitted: Drop 1 at bar {drop1_bar} <= 8")
 
         # Build cue list — (position_ms, kind)
         # kind: 1=A, 2=B, 3=C, 0=memory
@@ -91,9 +131,11 @@ def main():
             print(f"  Cue B (hot)    bar 16     {bar16_ms}ms")
 
         # Hot cue C — 8 bars before Drop 1
-        if pre_drop_ms is not None:
-            cues.append((pre_drop_ms, 3))
-            print(f"  Cue C (hot)    pre-drop   {pre_drop_ms}ms")
+        if hot_cue_c_ms is not None:
+            cues.append((hot_cue_c_ms, 3))
+            print(f"  Cue C (hot)    pre-drop   {hot_cue_c_ms}ms")
+
+
 
         # Memory cue — Drop 1
         if drop1_ms is not None:
