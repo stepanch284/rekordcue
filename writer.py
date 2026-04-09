@@ -61,23 +61,27 @@ def backup_master_db(db_path: Path) -> Path:
     return backup_path
 
 
-def write_hot_cue(db, content, position_ms: int) -> None:
-    """Insert one hot cue (slot A) row into DjmdCue for the given track.
+def write_cue(db, content, position_ms: int, kind: int) -> None:
+    """Insert one cue row into DjmdCue for the given track.
 
-    Field values match live Rekordbox 7.2.3 rows as documented in RESEARCH.md:
-        Kind=1            — hot cue slot A
-        Color=255         — default hot cue colour (NOT the 0–8 palette index)
-        ColorTableIndex=22 — default appearance index (most common in live data)
-        CueMicrosec       — InMsec * 1000 (microsecond precision field)
+    Kind values (verified from live Rekordbox 7.2.3 data):
+        0 = memory cue
+        1 = hot cue slot A
+        2 = hot cue slot B
+        3 = hot cue slot C
 
-    created_at / updated_at are intentionally omitted — the StatsFull mixin
-    sets them to datetime.now automatically.
+    Color=255, ColorTableIndex=22 for hot cues (native Rekordbox defaults).
+    Memory cues use Color=0, ColorTableIndex=0.
+
+    created_at / updated_at are set automatically by the StatsFull mixin.
 
     Args:
         db:           Open Rekordbox6Database instance.
         content:      DjmdContent ORM row for the target track.
         position_ms:  Cue position in milliseconds (integer).
+        kind:         Cue kind (0=memory, 1=A, 2=B, 3=C).
     """
+    is_hot_cue = kind > 0
     cue_id = str(db.generate_unused_id(DjmdCue))
 
     cue = DjmdCue(
@@ -92,39 +96,33 @@ def write_hot_cue(db, content, position_ms: int) -> None:
         OutFrame=-1,
         OutMpegFrame=-1,
         OutMpegAbs=-1,
-        Kind=1,                                 # hot cue slot A
-        Color=255,                              # default hot cue colour
-        ColorTableIndex=22,                     # default appearance index
+        Kind=kind,
+        Color=255 if is_hot_cue else 0,
+        ColorTableIndex=22 if is_hot_cue else 0,
         ActiveLoop=0,
-        Comment='',                             # no label — native Rekordbox behaviour
+        Comment='',                              # no label — native Rekordbox behaviour
         BeatLoopSize=-1,
         CueMicrosec=round(position_ms) * 1000,  # microseconds
         UUID=str(uuid.uuid4()),
     )
 
     db.add(cue)
-    db.commit()   # pyrekordbox commit() has built-in rekordbox process guard + USN management
+    db.commit()
 
 
-def safe_write_sequence(db, content, position_ms: int) -> Path:
-    """Full safety sequence: process guard -> backup -> write.
+def safe_write_all(db, content, cues: list) -> Path:
+    """Full safety sequence: process guard -> backup -> write all cues.
+
+    cues: list of (position_ms, kind) tuples, e.g.:
+        [(0, 1), (4000, 2), (28000, 3), (30000, 0)]
 
     Order is deliberate:
         1. require_rekordbox_closed() — early, clean error before any mutation.
-        2. backup_master_db()         — filesystem copy; if this fails, no DB changes made.
-        3. write_hot_cue()            — ORM insert + commit.
-
-    Args:
-        db:           Open Rekordbox6Database instance.
-        content:      DjmdContent ORM row for the target track.
-        position_ms:  Cue position in milliseconds (integer).
+        2. backup_master_db()         — filesystem copy; abort if backup fails.
+        3. write_cue() for each cue  — ORM insert + commit per cue.
 
     Returns:
-        Path to the backup file created before the write.
-
-    Raises:
-        RuntimeError: From require_rekordbox_closed() or backup_master_db() on failure.
-        Exception:    Propagates from write_hot_cue() on commit failure; backup still exists.
+        Path to the backup file.
     """
     require_rekordbox_closed()
 
@@ -133,9 +131,15 @@ def safe_write_sequence(db, content, position_ms: int) -> Path:
     print(f"Backup created: {backup}")
 
     try:
-        write_hot_cue(db, content, position_ms)
-    except Exception as exc:
+        for position_ms, kind in cues:
+            write_cue(db, content, position_ms, kind)
+    except Exception:
         print(f"Write failed — backup available at {backup}")
         raise
 
     return backup
+
+
+def safe_write_sequence(db, content, position_ms: int) -> Path:
+    """Legacy single-cue write — kept for compatibility. Writes hot cue A."""
+    return safe_write_all(db, content, [(position_ms, 1)])
