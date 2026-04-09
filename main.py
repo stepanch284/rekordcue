@@ -8,16 +8,16 @@ Runs the full read-detect-write pipeline for a single track:
     1. Open Rekordbox master.db
     2. Validate DjmdCue schema
     3. Load track metadata
-    4. Parse ANLZ PWAV waveform (400 samples) and PQTZ beat grid
-    5. Detect first major energy onset
-    6. Write one hot cue (slot A) to DjmdCue via safe_write_sequence
+    4. Parse ANLZ PWAV waveform and PQTZ beat grid
+    5. Detect sections via PSSI phrase analysis (falls back to energy detection)
+    6. Write hot cue A at bar 0
 """
 
 import sys
 
 from db import open_database, validate_schema, get_track
-from waveform import get_pwav_amplitudes, get_beat_grid
-from detect import detect_first_onset
+from waveform import get_pwav_amplitudes, get_beat_grid, get_pssi_sections
+from detect import detect_sections_from_pssi, detect_first_onset
 from writer import safe_write_sequence
 
 
@@ -44,23 +44,30 @@ def main():
         amplitudes, length_s = get_pwav_amplitudes(db, content)
         print(f"PWAV loaded: {len(amplitudes)} samples")
 
-        # Step 4b: Parse PQTZ beat grid
-        bar_times_s, bpm = get_beat_grid(db, content)
+        # Step 4b: Parse PQTZ beat grid (bar times + all beat times for PSSI lookup)
+        bar_times_s, bpm, all_beat_times_s = get_beat_grid(db, content)
         print(f"Beat grid: {len(bar_times_s)} bars, BPM={bpm:.1f}")
 
-        # Step 5: Detect first energy onset (Drop 1)
-        onset_s, bar_idx = detect_first_onset(amplitudes, bar_times_s, length_s)
-        onset_ms = round(onset_s * 1000)
-        print(f"Detected onset at bar {bar_idx}, {onset_s:.3f}s ({onset_ms}ms)")
+        # Step 5: Detect sections — PSSI first, fallback to energy
+        pssi_sections = get_pssi_sections(db, content, all_beat_times_s)
+        if pssi_sections:
+            sections = detect_sections_from_pssi(pssi_sections)
+            drop1_s = sections["drop1_s"]
+        else:
+            print("[main] No PSSI — using energy fallback")
+            drop1_s, _ = detect_first_onset(amplitudes, bar_times_s, length_s)
 
-        # Step 6: Guard, backup, write
-        # Hot cue A is always at bar 0 (track start anchor)
+        if drop1_s is not None:
+            print(f"Drop 1 at {drop1_s:.3f}s ({int(drop1_s * 1000)}ms)")
+        else:
+            print("WARNING: Could not detect Drop 1")
+
+        # Step 6: Guard, backup, write hot cue A at bar 0
         bar0_ms = int(bar_times_s[0] * 1000)  # type: ignore[arg-type]
         safe_write_sequence(db, content, bar0_ms)
         print(f"Hot cue A written at bar 0 ({bar0_ms}ms)")
 
     except RuntimeError as exc:
-        # Covers: process guard blocked, schema mismatch, backup failure
         print(f"ERROR: {exc}")
         sys.exit(1)
     except Exception as exc:
